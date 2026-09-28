@@ -1,0 +1,6 @@
+{
+  "name": "Albayen Immobilier Sousse",
+  "description": "Application Web de Gestion et de Commercialisation Immobilière à Sousse — Vente, Location, Visites, CRM et Back-office.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
