@@ -40,27 +40,22 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenRoleSwitcher }
             </span>
             <ul className="space-y-2">
               <li>
-                <button onClick={() => onNavigate('public')} className="hover:text-white transition-colors">
+                <button onClick={() => onNavigate('public')} className="hover:text-white transition-colors cursor-pointer">
                   Accueil
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('public', 'properties-section')} className="hover:text-white transition-colors">
+                <button onClick={() => onNavigate('public', 'properties-section')} className="hover:text-white transition-colors cursor-pointer">
                   Biens à Vendre & à Louer
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('public', 'districts-section')} className="hover:text-white transition-colors">
-                  Quartiers de Sousse
-                </button>
-              </li>
-              <li>
-                <button onClick={() => onNavigate('public', 'services-section')} className="hover:text-white transition-colors">
+                <button onClick={() => onNavigate('public', 'services-section')} className="hover:text-white transition-colors cursor-pointer">
                   Nos Services Immobiliers
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('public', 'contact-section')} className="hover:text-white transition-colors">
+                <button onClick={() => onNavigate('public', 'contact-section')} className="hover:text-white transition-colors cursor-pointer">
                   Contact & Localisation
                 </button>
               </li>

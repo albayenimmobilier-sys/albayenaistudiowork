@@ -25,6 +25,18 @@ import {
 import { Property, Agent } from '../types';
 import { useApp } from '../context/AppContext';
 import { getTranslation } from '../utils/translations';
+import { PrintableCommercialSheet } from './crm/PrintableCommercialSheet';
+import { PriceHistoryTimeline } from './crm/PriceHistoryTimeline';
+import { SpecificSpecsViewer } from './crm/SpecificSpecsViewer';
+import { WatermarkStudio } from './crm/WatermarkStudio';
+import { 
+  Stamp, 
+  Lock, 
+  Unlock, 
+  Radio, 
+  Layers, 
+  SlidersHorizontal 
+} from 'lucide-react';
 
 interface PropertyDetailModalProps {
   property: Property;
@@ -43,8 +55,10 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
   const t = getTranslation(language);
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [activeTab, setActiveTab] = useState<'details' | 'specs' | 'location' | 'credit' | 'docs'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'specs' | 'history' | 'location' | 'credit' | 'docs' | 'confidential'>('details');
   const [copiedShare, setCopiedShare] = useState(false);
+  const [showCommercialSheet, setShowCommercialSheet] = useState(false);
+  const [showWatermarkStudio, setShowWatermarkStudio] = useState(false);
 
   // Credit Simulator State (Tunisian Bank parameters)
   const [personalDownPayment, setPersonalDownPayment] = useState(Math.round(property.price * 0.2));
@@ -92,6 +106,24 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowCommercialSheet(true)}
+              className="p-2 text-stone-700 hover:text-stone-900 bg-stone-100 hover:bg-stone-200 rounded-lg transition-colors text-xs flex items-center gap-1.5 font-medium cursor-pointer"
+              title="Générer la Fiche Commerciale / Vitrine A4"
+            >
+              <Printer className="w-4 h-4 text-amber-800" />
+              <span className="hidden sm:inline">Fiche Vitrine</span>
+            </button>
+
+            <button
+              onClick={() => setShowWatermarkStudio(true)}
+              className="p-2 text-amber-800 hover:text-amber-950 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors text-xs flex items-center gap-1.5 font-medium cursor-pointer border border-amber-200/60"
+              title="Watermark Studio · Filigrane officiel des visuels"
+            >
+              <Stamp className="w-4 h-4 text-amber-800" />
+              <span className="hidden sm:inline">Filigrane</span>
+            </button>
+
             <button
               onClick={handleShare}
               className="p-2 text-stone-600 hover:text-stone-900 hover:bg-stone-200/60 rounded-lg transition-colors text-xs flex items-center gap-1 font-medium"
@@ -230,10 +262,10 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
           </div>
 
           {/* Navigation Tabs */}
-          <div className="flex items-center gap-1 border-b border-stone-200">
+          <div className="flex items-center gap-1 border-b border-stone-200 overflow-x-auto no-scrollbar">
             <button
               onClick={() => setActiveTab('details')}
-              className={`px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
+              className={`px-3.5 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
                 activeTab === 'details'
                   ? 'border-stone-900 text-stone-900'
                   : 'border-transparent text-stone-500 hover:text-stone-800'
@@ -242,8 +274,28 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
               Description & Prestations
             </button>
             <button
+              onClick={() => setActiveTab('specs')}
+              className={`px-3.5 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
+                activeTab === 'specs'
+                  ? 'border-stone-900 text-stone-900'
+                  : 'border-transparent text-stone-500 hover:text-stone-800'
+              }`}
+            >
+              Fiche Technique Typée
+            </button>
+            <button
+              onClick={() => setActiveTab('history')}
+              className={`px-3.5 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
+                activeTab === 'history'
+                  ? 'border-stone-900 text-stone-900'
+                  : 'border-transparent text-stone-500 hover:text-stone-800'
+              }`}
+            >
+              Évolution du Prix
+            </button>
+            <button
               onClick={() => setActiveTab('location')}
-              className={`px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
+              className={`px-3.5 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
                 activeTab === 'location'
                   ? 'border-stone-900 text-stone-900'
                   : 'border-transparent text-stone-500 hover:text-stone-800'
@@ -253,7 +305,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
             </button>
             <button
               onClick={() => setActiveTab('credit')}
-              className={`px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
+              className={`px-3.5 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
                 activeTab === 'credit'
                   ? 'border-stone-900 text-stone-900'
                   : 'border-transparent text-stone-500 hover:text-stone-800'
@@ -263,13 +315,24 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
             </button>
             <button
               onClick={() => setActiveTab('docs')}
-              className={`px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
+              className={`px-3.5 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
                 activeTab === 'docs'
                   ? 'border-stone-900 text-stone-900'
                   : 'border-transparent text-stone-500 hover:text-stone-800'
               }`}
             >
               Documents ({property.documents?.length || 0})
+            </button>
+            <button
+              onClick={() => setActiveTab('confidential')}
+              className={`px-3.5 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+                activeTab === 'confidential'
+                  ? 'border-amber-800 text-amber-900 bg-amber-50/50'
+                  : 'border-transparent text-stone-500 hover:text-amber-900'
+              }`}
+            >
+              <Lock className="w-3.5 h-3.5 text-amber-800" />
+              <span>Données Internes & Confidentielles</span>
             </button>
           </div>
 
@@ -297,6 +360,75 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Tab Content: Fiche Technique Typée */}
+          {activeTab === 'specs' && (
+            <SpecificSpecsViewer property={property} />
+          )}
+
+          {/* Tab Content: Historique des Prix */}
+          {activeTab === 'history' && (
+            <PriceHistoryTimeline property={property} />
+          )}
+
+          {/* Tab Content: Données Confidentielles (Section 8) */}
+          {activeTab === 'confidential' && (
+            <div className="space-y-4">
+              <div className="p-4 bg-amber-50 rounded-xl border border-amber-200/80 flex items-start gap-3">
+                <ShieldCheck className="w-5 h-5 text-amber-800 shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="text-xs font-bold text-amber-950 uppercase tracking-wide">
+                    Niveaux de Visibilité & Données Sensibles (Section 8)
+                  </h4>
+                  <p className="text-xs text-amber-800 mt-0.5">
+                    Informations réservées à l'équipe commerciale et à la Direction d'Albayen Immobilier.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/50">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 mb-1">
+                    Niveau 1 · Public
+                  </div>
+                  <strong className="text-xs text-stone-900 block mb-1">Affichage Site & Portails</strong>
+                  <p className="text-[11px] text-stone-600">
+                    Titre, photos publiques filigranées, prix net vendeur, surface ({property.surface}m²), quartier ({property.district}).
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-xl border border-blue-200 bg-blue-50/50">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-blue-800 mb-1">
+                    Niveau 2 · Interne Équipe
+                  </div>
+                  <strong className="text-xs text-stone-900 block mb-1">Notes Commerciales & Marge</strong>
+                  <p className="text-[11px] text-stone-600">
+                    Commission négociée : <strong>3% HT</strong> · Marge de négociation acheteur estimée : <strong>~5% max</strong>.
+                  </p>
+                  <p className="text-[11px] text-stone-600 mt-1">
+                    Propriétaire : <strong>{property.ownerId || 'M. Sihem Ben Romdhane'}</strong>
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-xl border border-purple-200 bg-purple-50/50">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-purple-800 mb-1 flex items-center gap-1">
+                    <Lock className="w-3 h-3 text-purple-700" />
+                    Niveau 3 · Confidentiel
+                  </div>
+                  <strong className="text-xs text-stone-900 block mb-1">Conservation Foncière & CIN</strong>
+                  <p className="text-[11px] text-stone-600">
+                    N° Titre Bleu : <strong className="font-mono">{property.cadastralBlueTitleNumber || 'TB-SOUSSE-18942-INDIVIDUEL'}</strong>
+                  </p>
+                  <p className="text-[11px] text-stone-600 mt-1">
+                    Prix Plancher Net Mandant : <strong>{((property.minNetOwnerPrice || property.price * 0.95)).toLocaleString('fr-FR')} DT</strong>
+                  </p>
+                  <p className="text-[11px] text-stone-600 mt-1">
+                    CIN Vendeur : <strong className="font-mono">{property.ownerCinNumber || '08459123'}</strong>
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -516,6 +648,22 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
         </div>
 
       </div>
+
+      {showCommercialSheet && (
+        <PrintableCommercialSheet
+          property={property}
+          onClose={() => setShowCommercialSheet(false)}
+        />
+      )}
+
+      {showWatermarkStudio && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/80 backdrop-blur-sm overflow-y-auto">
+          <WatermarkStudio
+            property={property}
+            onClose={() => setShowWatermarkStudio(false)}
+          />
+        </div>
+      )}
     </div>
   );
 };

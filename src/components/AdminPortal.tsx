@@ -31,10 +31,38 @@ import {
   Mail,
   UserX,
   Sparkles,
-  Percent
+  Percent,
+  CheckSquare,
+  Layers,
+  History,
+  Printer,
+  Clock,
+  Share2,
+  Upload,
+  BarChart3,
+  KeyRound,
+  Terminal,
+  Stamp
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { Property, Lead, Visit, Owner, Agent, CommercialOffer, ActivityLog } from '../types';
+import { ContactsManager } from './crm/ContactsManager';
+import { TasksManager } from './crm/TasksManager';
+import { MandatesManager } from './crm/MandatesManager';
+import { AgentCalendarView } from './crm/AgentCalendarView';
+import { CommercialKanbanPipeline } from './crm/CommercialKanbanPipeline';
+import { OffersAndNegotiations } from './crm/OffersAndNegotiations';
+import { SalesTransactionsManager } from './crm/SalesTransactionsManager';
+import { PropertyLifecycleModal } from './crm/PropertyLifecycleModal';
+import { PrintableVisitVoucher } from './crm/PrintableVisitVoucher';
+import { SyndicationManager } from './crm/SyndicationManager';
+import { DataImportExportManager } from './crm/DataImportExportManager';
+import { AdvancedStatsDashboard } from './crm/AdvancedStatsDashboard';
+import { PermissionsMatrixManager } from './crm/PermissionsMatrixManager';
+import { ApiExplorerModal } from './crm/ApiExplorerModal';
+import { WatermarkStudio } from './crm/WatermarkStudio';
+import { PrintableMandateContract } from './crm/PrintableMandateContract';
+import { PrintablePurchaseOffer } from './crm/PrintablePurchaseOffer';
 
 interface AdminPortalProps {
   onSelectProperty: (property: Property) => void;
@@ -66,12 +94,23 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSelectProperty }) =>
     updateOfferStatus, 
     exportBackup, 
     resetToDefaultData, 
-    formatPrice 
+    formatPrice,
+    unifiedContacts,
+    mandates,
+    crmTasks,
+    fullOffers,
+    salesTransactions
   } = useApp();
 
   const [currentTab, setCurrentTab] = useState<
-    'dashboard' | 'properties' | 'crm' | 'visits' | 'owners' | 'agents' | 'commercial' | 'audit' | 'settings'
+    'dashboard' | 'properties' | 'contacts' | 'pipeline' | 'mandates' | 'calendar' | 'tasks' | 'commercial' | 'closing' | 'visits' | 'owners' | 'agents' | 'syndication' | 'import_export' | 'stats_bi' | 'permissions' | 'api_explorer' | 'watermark' | 'audit' | 'settings'
   >('dashboard');
+
+  // Modals for Property Lifecycle, Printable Visit Voucher, Mandates & Offers
+  const [activeLifecycleProperty, setActiveLifecycleProperty] = useState<Property | null>(null);
+  const [activeVoucherVisit, setActiveVoucherVisit] = useState<Visit | null>(null);
+  const [activePrintableMandate, setActivePrintableMandate] = useState<any | null>(null);
+  const [activePrintableOffer, setActivePrintableOffer] = useState<any | null>(null);
 
   // Search & Filter in Admin Properties
   const [propSearch, setPropSearch] = useState('');
@@ -428,7 +467,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSelectProperty }) =>
       <div className="flex items-center gap-1 overflow-x-auto pb-2 border-b border-stone-200 mb-8 text-xs sm:text-sm font-semibold no-scrollbar">
         <button
           onClick={() => setCurrentTab('dashboard')}
-          className={`px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+          className={`px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
             currentTab === 'dashboard' ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'
           }`}
         >
@@ -438,7 +477,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSelectProperty }) =>
 
         <button
           onClick={() => setCurrentTab('properties')}
-          className={`px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+          className={`px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
             currentTab === 'properties' ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'
           }`}
         >
@@ -447,28 +486,148 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSelectProperty }) =>
         </button>
 
         <button
-          onClick={() => setCurrentTab('crm')}
-          className={`px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5 ${
-            currentTab === 'crm' ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'
+          onClick={() => setCurrentTab('contacts')}
+          className={`px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+            currentTab === 'contacts' ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'
           }`}
         >
           <Users className="w-4 h-4" />
-          <span>Prospects CRM ({leads.length})</span>
+          <span>Contacts Unifiés ({unifiedContacts.length})</span>
+        </button>
+
+        <button
+          onClick={() => setCurrentTab('pipeline')}
+          className={`px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+            currentTab === 'pipeline' ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'
+          }`}
+        >
+          <Layers className="w-4 h-4" />
+          <span>Pipeline Kanban ({leads.length})</span>
+        </button>
+
+        <button
+          onClick={() => setCurrentTab('mandates')}
+          className={`px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+            currentTab === 'mandates' ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'
+          }`}
+        >
+          <FileText className="w-4 h-4" />
+          <span>Mandats ({mandates.length})</span>
+        </button>
+
+        <button
+          onClick={() => setCurrentTab('calendar')}
+          className={`px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+            currentTab === 'calendar' ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'
+          }`}
+        >
+          <Calendar className="w-4 h-4" />
+          <span>Agenda & Conflits</span>
+        </button>
+
+        <button
+          onClick={() => setCurrentTab('tasks')}
+          className={`px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+            currentTab === 'tasks' ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'
+          }`}
+        >
+          <CheckSquare className="w-4 h-4" />
+          <span>Tâches ({crmTasks.filter(t => t.status !== 'terminee').length})</span>
+        </button>
+
+        <button
+          onClick={() => setCurrentTab('commercial')}
+          className={`px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+            currentTab === 'commercial' ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'
+          }`}
+        >
+          <DollarSign className="w-4 h-4" />
+          <span>Offres & Négos ({fullOffers.length})</span>
+        </button>
+
+        <button
+          onClick={() => setCurrentTab('closing')}
+          className={`px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+            currentTab === 'closing' ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'
+          }`}
+        >
+          <ShieldCheck className="w-4 h-4" />
+          <span>Closing / Compromis ({salesTransactions.length})</span>
         </button>
 
         <button
           onClick={() => setCurrentTab('visits')}
-          className={`px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+          className={`px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
             currentTab === 'visits' ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'
           }`}
         >
-          <Calendar className="w-4 h-4" />
+          <Clock className="w-4 h-4" />
           <span>Visites ({visits.length})</span>
         </button>
 
         <button
+          onClick={() => setCurrentTab('syndication')}
+          className={`px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+            currentTab === 'syndication' ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'
+          }`}
+        >
+          <Share2 className="w-4 h-4" />
+          <span>Diffusion Portails</span>
+        </button>
+
+        <button
+          onClick={() => setCurrentTab('import_export')}
+          className={`px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+            currentTab === 'import_export' ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'
+          }`}
+        >
+          <Upload className="w-4 h-4" />
+          <span>Import/Export (10 étapes)</span>
+        </button>
+
+        <button
+          onClick={() => setCurrentTab('stats_bi')}
+          className={`px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+            currentTab === 'stats_bi' ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'
+          }`}
+        >
+          <BarChart3 className="w-4 h-4" />
+          <span>BI & Statistiques</span>
+        </button>
+
+        <button
+          onClick={() => setCurrentTab('permissions')}
+          className={`px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+            currentTab === 'permissions' ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'
+          }`}
+        >
+          <KeyRound className="w-4 h-4" />
+          <span>Matrice RBAC</span>
+        </button>
+
+        <button
+          onClick={() => setCurrentTab('api_explorer')}
+          className={`px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+            currentTab === 'api_explorer' ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'
+          }`}
+        >
+          <Terminal className="w-4 h-4" />
+          <span>API RESTful</span>
+        </button>
+
+        <button
+          onClick={() => setCurrentTab('watermark')}
+          className={`px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+            currentTab === 'watermark' ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'
+          }`}
+        >
+          <Stamp className="w-4 h-4" />
+          <span>Watermark Studio</span>
+        </button>
+
+        <button
           onClick={() => setCurrentTab('owners')}
-          className={`px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+          className={`px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
             currentTab === 'owners' ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'
           }`}
         >
@@ -478,27 +637,17 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSelectProperty }) =>
 
         <button
           onClick={() => setCurrentTab('agents')}
-          className={`px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+          className={`px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
             currentTab === 'agents' ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'
           }`}
         >
-          <ShieldCheck className="w-4 h-4" />
+          <Users className="w-4 h-4" />
           <span>Agents ({agents.length})</span>
         </button>
 
         <button
-          onClick={() => setCurrentTab('commercial')}
-          className={`px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5 ${
-            currentTab === 'commercial' ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'
-          }`}
-        >
-          <DollarSign className="w-4 h-4" />
-          <span>Offres & Négos ({offers.length})</span>
-        </button>
-
-        <button
           onClick={() => setCurrentTab('audit')}
-          className={`px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+          className={`px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
             currentTab === 'audit' ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'
           }`}
         >
@@ -508,7 +657,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSelectProperty }) =>
 
         <button
           onClick={() => setCurrentTab('settings')}
-          className={`px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+          className={`px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
             currentTab === 'settings' ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'
           }`}
         >
@@ -565,7 +714,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSelectProperty }) =>
                 <h3 className="text-sm font-bold text-stone-900 uppercase tracking-wider">
                   Derniers Prospects Inscrits
                 </h3>
-                <button onClick={() => setCurrentTab('crm')} className="text-xs font-semibold text-amber-800 hover:underline">
+                <button onClick={() => setCurrentTab('contacts')} className="text-xs font-semibold text-amber-800 hover:underline">
                   Voir tout CRM →
                 </button>
               </div>
@@ -715,6 +864,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSelectProperty }) =>
 
                       <td className="p-3.5 text-right space-x-1.5 whitespace-nowrap">
                         <button
+                          onClick={() => setActiveLifecycleProperty(prop)}
+                          className="p-1.5 text-amber-800 hover:text-amber-950 rounded-lg hover:bg-amber-100 transition-colors"
+                          title="Cycle de vie & Historique commercial"
+                        >
+                          <History className="w-4 h-4" />
+                        </button>
+                        <button
                           onClick={() => onSelectProperty(prop)}
                           className="p-1.5 text-stone-500 hover:text-stone-900 rounded-lg hover:bg-stone-100"
                           title="Voir fiche publique"
@@ -749,70 +905,34 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSelectProperty }) =>
         </div>
       )}
 
-      {/* VIEW 3: CRM PROSPECTS */}
-      {currentTab === 'crm' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-display font-bold text-stone-900">
-              Répertoire Global des Prospects & Opportunités ({leads.length})
-            </h2>
-          </div>
+      {/* VIEW: UNIFIED CONTACTS (CRM) */}
+      {currentTab === 'contacts' && (
+        <ContactsManager onSelectProperty={onSelectProperty} />
+      )}
 
-          <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-xs">
-            <div className="overflow-x-auto w-full max-w-full">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-stone-50 border-b border-stone-200 text-stone-500 uppercase tracking-wider font-semibold">
-                  <tr>
-                    <th className="p-3.5">Réf & Prospect</th>
-                    <th className="p-3.5">Contact</th>
-                    <th className="p-3.5">Projet / Budget</th>
-                    <th className="p-3.5">Source</th>
-                    <th className="p-3.5">Statut CRM</th>
-                    <th className="p-3.5">Agent Assigné</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-stone-100">
-                  {leads.map(ld => {
-                    const assigned = agents.find(a => a.id === ld.agentId);
+      {/* VIEW: COMMERCIAL KANBAN PIPELINE */}
+      {currentTab === 'pipeline' && (
+        <CommercialKanbanPipeline />
+      )}
 
-                    return (
-                      <tr key={ld.id} className="hover:bg-stone-50/80">
-                        <td className="p-3.5">
-                          <span className="font-bold text-stone-900 block">{ld.firstName} {ld.lastName}</span>
-                          <span className="text-[11px] text-amber-800 font-semibold">{ld.ref}</span>
-                        </td>
+      {/* VIEW: MANDATS IMMOBILIERS & ALERTES */}
+      {currentTab === 'mandates' && (
+        <MandatesManager onSelectProperty={onSelectProperty} />
+      )}
 
-                        <td className="p-3.5">
-                          <span className="text-stone-900 font-medium block">{ld.phone}</span>
-                          <span className="text-stone-500 text-[11px]">{ld.email}</span>
-                        </td>
+      {/* VIEW: CALENDRIER DES AGENTS & CONFLITS */}
+      {currentTab === 'calendar' && (
+        <AgentCalendarView />
+      )}
 
-                        <td className="p-3.5">
-                          <span className="font-medium text-stone-800 capitalize block">{ld.needType}</span>
-                          <span className="text-stone-500 tabular-nums">Max: {ld.budgetMax ? `${ld.budgetMax.toLocaleString('fr-FR')} DT` : 'Non fixé'}</span>
-                        </td>
+      {/* VIEW: TÂCHES & RELANCES AUTOMATIQUES */}
+      {currentTab === 'tasks' && (
+        <TasksManager />
+      )}
 
-                        <td className="p-3.5 capitalize text-stone-600">
-                          {ld.source}
-                        </td>
-
-                        <td className="p-3.5">
-                          <span className="px-2 py-0.5 rounded-sm text-[11px] font-semibold bg-stone-100 text-stone-800">
-                            {ld.status}
-                          </span>
-                        </td>
-
-                        <td className="p-3.5 text-stone-700 font-medium">
-                          {assigned?.name || 'Direction Agence'}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
+      {/* VIEW: CLOSING / TRANSACTIONS / COMPROMIS */}
+      {currentTab === 'closing' && (
+        <SalesTransactionsManager />
       )}
 
       {/* VIEW 4: VISITS */}
@@ -832,6 +952,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSelectProperty }) =>
                     <th className="p-3.5">Date & Créneau</th>
                     <th className="p-3.5">Agent</th>
                     <th className="p-3.5">Statut</th>
+                    <th className="p-3.5 text-right">Bon de Visite</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-100">
@@ -856,12 +977,56 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSelectProperty }) =>
                           {v.status}
                         </span>
                       </td>
+                      <td className="p-3.5 text-right">
+                        <button
+                          onClick={() => setActiveVoucherVisit(v)}
+                          className="px-2.5 py-1 text-xs font-semibold text-stone-700 hover:text-stone-900 bg-stone-100 hover:bg-stone-200 rounded-lg inline-flex items-center gap-1 transition-colors cursor-pointer"
+                          title="Générer / Imprimer le Bon de visite certifié"
+                        >
+                          <Printer className="w-3.5 h-3.5 text-amber-700" />
+                          <span>Bon de visite</span>
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* VIEW: DIFFUSION & PORTAILS EXTERNES (Section 2) */}
+      {currentTab === 'syndication' && (
+        <SyndicationManager onSelectProperty={onSelectProperty} />
+      )}
+
+      {/* VIEW: IMPORT & EXPORT DES DONNÉES EN 10 ÉTAPES (Section 3 & 4) */}
+      {currentTab === 'import_export' && (
+        <DataImportExportManager />
+      )}
+
+      {/* VIEW: BI & STATISTIQUES AVANCÉES (Section 24) */}
+      {currentTab === 'stats_bi' && (
+        <AdvancedStatsDashboard />
+      )}
+
+      {/* VIEW: MATRICE DES PERMISSIONS & RBAC (Section 22) */}
+      {currentTab === 'permissions' && (
+        <PermissionsMatrixManager />
+      )}
+
+      {/* VIEW: API RESTFUL EXPLORER & DOCS (Section 23) */}
+      {currentTab === 'api_explorer' && (
+        <div className="space-y-4">
+          <ApiExplorerModal />
+        </div>
+      )}
+
+      {/* VIEW: WATERMARK STUDIO (Section 13) */}
+      {currentTab === 'watermark' && (
+        <div className="space-y-4">
+          <WatermarkStudio property={properties[0]} />
         </div>
       )}
 
@@ -1293,73 +1458,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSelectProperty }) =>
         </div>
       )}
 
-      {/* VIEW 7: COMMERCIAL OFFERS */}
+      {/* VIEW 7: COMMERCIAL OFFERS & NEGOTIATIONS */}
       {currentTab === 'commercial' && (
-        <div className="space-y-4">
-          <h2 className="text-lg font-display font-bold text-stone-900">
-            Offres d'Achat, Négociations & Commissions d'Agence
-          </h2>
-
-          <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-xs">
-            <div className="overflow-x-auto w-full max-w-full">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-stone-50 border-b border-stone-200 text-stone-500 uppercase tracking-wider font-semibold">
-                  <tr>
-                    <th className="p-3.5">Réf & Bien</th>
-                    <th className="p-3.5">Acquéreur</th>
-                    <th className="p-3.5">Prix Catalogue</th>
-                    <th className="p-3.5">Offre Soumise</th>
-                    <th className="p-3.5">Commission Agence (2.5%)</th>
-                    <th className="p-3.5">Statut</th>
-                    <th className="p-3.5 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-stone-100">
-                  {offers.map(off => (
-                    <tr key={off.id} className="hover:bg-stone-50/80">
-                      <td className="p-3.5">
-                        <span className="font-bold text-stone-900 block">{off.ref}</span>
-                        <span className="text-stone-500">{off.propertyRef}</span>
-                      </td>
-                      <td className="p-3.5">
-                        <span className="font-semibold text-stone-900 block">{off.clientName}</span>
-                        <span className="text-stone-500">{off.clientPhone}</span>
-                      </td>
-                      <td className="p-3.5 font-medium tabular-nums">
-                        {off.listedPrice.toLocaleString('fr-FR')} DT
-                      </td>
-                      <td className="p-3.5 font-bold text-amber-800 tabular-nums">
-                        {off.offeredAmount.toLocaleString('fr-FR')} DT
-                      </td>
-                      <td className="p-3.5 font-bold text-emerald-700 tabular-nums">
-                        {off.estimatedCommission.toLocaleString('fr-FR')} DT
-                      </td>
-                      <td className="p-3.5">
-                        <span className="px-2 py-0.5 rounded-sm text-[11px] font-semibold bg-amber-50 text-amber-800">
-                          {off.status}
-                        </span>
-                      </td>
-                      <td className="p-3.5 text-right space-x-1.5">
-                        <button
-                          onClick={() => updateOfferStatus(off.id, 'accepted')}
-                          className="px-2 py-1 text-[11px] font-semibold text-white bg-emerald-600 rounded-md hover:bg-emerald-700"
-                        >
-                          Accepter
-                        </button>
-                        <button
-                          onClick={() => updateOfferStatus(off.id, 'rejected')}
-                          className="px-2 py-1 text-[11px] font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-md hover:bg-rose-100"
-                        >
-                          Refuser
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
+        <OffersAndNegotiations onSelectProperty={onSelectProperty} />
       )}
 
       {/* VIEW 8: AUDIT TRAIL LOGS */}
@@ -2065,6 +2166,38 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onSelectProperty }) =>
             </div>
           </div>
         </div>
+      )}
+
+      {/* MODALS: Property Lifecycle & Commercial History */}
+      {activeLifecycleProperty && (
+        <PropertyLifecycleModal
+          property={activeLifecycleProperty}
+          onClose={() => setActiveLifecycleProperty(null)}
+        />
+      )}
+
+      {/* MODALS: Printable Official Visit Voucher (Bon de Visite) */}
+      {activeVoucherVisit && (
+        <PrintableVisitVoucher
+          visit={activeVoucherVisit}
+          onClose={() => setActiveVoucherVisit(null)}
+        />
+      )}
+
+      {/* MODALS: Printable Official Mandate Contract */}
+      {activePrintableMandate && (
+        <PrintableMandateContract
+          mandate={activePrintableMandate}
+          onClose={() => setActivePrintableMandate(null)}
+        />
+      )}
+
+      {/* MODALS: Printable Official Purchase Offer */}
+      {activePrintableOffer && (
+        <PrintablePurchaseOffer
+          offer={activePrintableOffer}
+          onClose={() => setActivePrintableOffer(null)}
+        />
       )}
 
     </div>

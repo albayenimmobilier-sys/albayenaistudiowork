@@ -22,7 +22,10 @@ import { RoleSwitcherModal } from './components/RoleSwitcherModal';
 import { Footer } from './components/Footer';
 import { Property, TransactionType } from './types';
 import { getTranslation } from './utils/translations';
-import { SlidersHorizontal, ArrowUpDown, Quote, CheckCircle2 } from 'lucide-react';
+import { SlidersHorizontal, ArrowUpDown, Quote, CheckCircle2, LayoutGrid, MapPin } from 'lucide-react';
+import { SpotlightSearchModal } from './components/SpotlightSearchModal';
+import { InteractivePropertyMap } from './components/InteractivePropertyMap';
+import { matchPropertyGeography } from './data/sousseGeography';
 
 const MainContent: React.FC = () => {
   const { 
@@ -39,6 +42,8 @@ const MainContent: React.FC = () => {
   const [infoProperty, setInfoProperty] = useState<Property | null>(null);
   const [isFavoritesOpen, setIsFavoritesOpen] = useState(false);
   const [isRoleSwitcherOpen, setIsRoleSwitcherOpen] = useState(false);
+  const [isSpotlightOpen, setIsSpotlightOpen] = useState(false);
+  const [displayMode, setDisplayMode] = useState<'grid' | 'map'>('grid');
 
   // Search & Filter State
   const [transactionFilter, setTransactionFilter] = useState<TransactionType | 'all'>('all');
@@ -68,12 +73,12 @@ const MainContent: React.FC = () => {
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Filter & Sort computation
+  // Filter & Sort computation (Hierarchical Geographic Matching)
   const filteredAndSortedProperties = properties
     .filter(p => {
       if (transactionFilter !== 'all' && p.transactionType !== transactionFilter) return false;
       if (typeFilter !== 'all' && p.type !== typeFilter) return false;
-      if (districtFilter !== 'all' && !p.district.toLowerCase().includes(districtFilter.toLowerCase()) && !p.city.toLowerCase().includes(districtFilter.toLowerCase())) return false;
+      if (districtFilter !== 'all' && !matchPropertyGeography(p.district, p.city, districtFilter)) return false;
       if (p.price > maxBudget) return false;
       if (bedroomsFilter !== 'any' && p.bedrooms < parseInt(bedroomsFilter)) return false;
       return true;
@@ -94,6 +99,9 @@ const MainContent: React.FC = () => {
       <Navbar
         onOpenRoleSwitcher={() => setIsRoleSwitcherOpen(true)}
         onOpenFavorites={() => setIsFavoritesOpen(true)}
+        onOpenSpotlight={() => setIsSpotlightOpen(true)}
+        onToggleMap={() => setDisplayMode(prev => prev === 'grid' ? 'map' : 'grid')}
+        isMapActive={displayMode === 'map'}
       />
 
       {/* Main View Router */}
@@ -118,6 +126,28 @@ const MainContent: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-3 self-start md:self-auto">
+                  {/* Grid vs Map Toggle */}
+                  <div className="flex items-center bg-stone-100 p-1 rounded-xl border border-stone-200 text-xs font-semibold">
+                    <button
+                      onClick={() => setDisplayMode('grid')}
+                      className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer ${
+                        displayMode === 'grid' ? 'bg-white text-stone-900 shadow-xs' : 'text-stone-600 hover:text-stone-900'
+                      }`}
+                    >
+                      <LayoutGrid className="w-3.5 h-3.5" />
+                      <span>Liste</span>
+                    </button>
+                    <button
+                      onClick={() => setDisplayMode('map')}
+                      className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer ${
+                        displayMode === 'map' ? 'bg-amber-800 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
+                      }`}
+                    >
+                      <MapPin className="w-3.5 h-3.5" />
+                      <span>Carte Sousse</span>
+                    </button>
+                  </div>
+
                   <div className="flex items-center gap-1.5 text-xs text-stone-500 font-medium bg-white px-3 py-2 rounded-lg border border-stone-200">
                     <ArrowUpDown className="w-3.5 h-3.5 text-stone-400" />
                     <span>Trier par :</span>
@@ -142,7 +172,7 @@ const MainContent: React.FC = () => {
                         setMaxBudget(4000000);
                         setBedroomsFilter('any');
                       }}
-                      className="text-xs font-semibold text-amber-800 hover:underline"
+                      className="text-xs font-semibold text-amber-800 hover:underline cursor-pointer"
                     >
                       Réinitialiser filtres
                     </button>
@@ -210,8 +240,20 @@ const MainContent: React.FC = () => {
                 ))}
               </div>
 
-              {/* Properties Grid */}
-              {filteredAndSortedProperties.length === 0 ? (
+              {/* Properties Display (Grid or Interactive Map) */}
+              {displayMode === 'map' ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between text-xs text-stone-500 px-1">
+                    <span>Explorez les biens géolocalisés à Sousse et ses délégations. Cliquez sur un marqueur pour afficher la fiche rapide.</span>
+                    <span className="font-bold text-amber-800">{filteredAndSortedProperties.length} biens affichés</span>
+                  </div>
+                  <InteractivePropertyMap
+                    properties={filteredAndSortedProperties}
+                    onSelectProperty={(p) => setSelectedProperty(p)}
+                    className="h-[650px] w-full"
+                  />
+                </div>
+              ) : filteredAndSortedProperties.length === 0 ? (
                 <div className="bg-white rounded-2xl p-16 text-center border border-stone-200 shadow-xs">
                   <p className="text-base font-bold text-stone-900">Aucun bien ne correspond à ces critères</p>
                   <p className="text-xs text-stone-500 mt-1 max-w-sm mx-auto">
@@ -406,6 +448,14 @@ const MainContent: React.FC = () => {
           onClose={() => setIsRoleSwitcherOpen(false)}
         />
       )}
+
+      {/* Global Spotlight Universal Search (Cmd+K) */}
+      <SpotlightSearchModal
+        isOpen={isSpotlightOpen}
+        onClose={() => setIsSpotlightOpen(false)}
+        onSelectProperty={(p) => setSelectedProperty(p)}
+        onSelectDistrict={(d) => handleSelectDistrict(d)}
+      />
 
     </div>
   );
